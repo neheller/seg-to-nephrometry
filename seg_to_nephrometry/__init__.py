@@ -217,6 +217,9 @@ def compute_scores_nib(vol_nib, seg_nib, subregions=None, verbose=False):
     seg = seg_nib.get_fdata().astype(np.uint8)
     vol = vol_nib.get_fdata()
 
+    # Transform labels
+    seg[np.logical_and(seg != 1, seg != 2)] = 0
+
     # Sanity checking
     has_kidney = np.sum(np.greater(seg, 0.5).astype(np.float32)) > 0
     if not has_kidney:
@@ -260,4 +263,8 @@ def compute_scores_nib(vol_nib, seg_nib, subregions=None, verbose=False):
     if verbose:
         print()
 
-    return c, r, p
+    return {
+        "cindex": c,
+        "renal": r,
+        "padua": p
+    }

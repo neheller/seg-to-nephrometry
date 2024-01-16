@@ -453,4 +453,3 @@ def get_affected_kidney_subregions(seg, vol):
     subregions = subregions + 2*sinus + 3*ucs + 4*rim
     subregions = np.where(np.equal(affected_seg, 2), affected_seg, subregions)
     return subregions
-
