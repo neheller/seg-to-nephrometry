@@ -20,6 +20,7 @@ import argparse
 from pathlib import Path
 
 import numpy as np
+import reorient_nii as reo
 
 from seg_to_nephrometry.utils import get_distance_to_collecting_system
 from seg_to_nephrometry.utils import get_distance_to_sinus
@@ -208,17 +209,47 @@ def get_padua(subregions, boundaries, slice_thickness, pixel_width,
     }
 
 
+def standardize_orientation(vol_nib, seg_nib):
+    """ Standardize the orientation of the volume and segmentation """
+    vol_nib = reo.reorient(vol_nib, "IPL")
+    seg_nib = reo.reorient(seg_nib, "IPL")
+
+    seg_nib.affine[:3,-1] = 0
+    vol_nib.affine[:3,-1] = 0
+
+    return vol_nib, seg_nib
+
+
 def compute_scores_nib(vol_nib, seg_nib, subregions=None, verbose=False):
+    # Transform to expected orientation
+    vol_nib, seg_nib = standardize_orientation(vol_nib, seg_nib)
+
     # Get useful meta
     pixel_width = np.abs(vol_nib.affine[0,2])
     slice_thickness = np.abs(vol_nib.affine[2,0])
 
     # Get voxel data
-    seg = seg_nib.get_fdata().astype(np.uint8)
-    vol = vol_nib.get_fdata()
+    seg = np.round(seg_nib.get_fdata()).astype(np.uint8)
+    vol = vol_nib.get_fdata().astype(np.float32)
 
     # Transform labels
     seg[np.logical_and(seg != 1, seg != 2)] = 0
+
+    # Crop if possible
+    first_full_frame = seg.shape[0]
+    last_full_frame = 0
+    for i in range(seg.shape[0]):
+        if np.sum(seg[i]) > 0:
+            first_full_frame = i
+            break
+    for i in range(seg.shape[0]-1, -1, -1):
+        if np.sum(seg[i]) > 0:
+            last_full_frame = i
+            break
+    crp_start = max(0, first_full_frame - 1)
+    crp_end = min(seg.shape[0], last_full_frame + 2)
+    seg = seg[crp_start:crp_end]
+    vol = vol[crp_start:crp_end]
 
     # Sanity checking
     has_kidney = np.sum(np.greater(seg, 0.5).astype(np.float32)) > 0
