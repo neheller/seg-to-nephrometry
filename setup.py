@@ -1,12 +1,11 @@
 import setuptools
 
 GENERAL_REQUIRES = [
-    'numpy',
-    'nibabel',
-    'pydicom',
-    'scipy',
-    'opencv-python',
-    'matplotlib'
+    "numpy==1.24.2",
+    "nibabel==3.2.2",
+    "pydicom==2.3.1",
+    "opencv-python==4.7.0.68",
+    "matplotlib==3.7.0"
 ]
 
 description = """A collection of scripts for computing morphometric quantities
