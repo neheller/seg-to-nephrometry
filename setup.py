@@ -6,7 +6,8 @@ GENERAL_REQUIRES = [
     "pydicom==2.3.1",
     "opencv-python==4.7.0.68",
     "matplotlib==3.7.0",
-    "scipy==1.10.0"
+    "scipy==1.10.0",
+    "reorient-nii==1.0.0",
 ]
 
 description = """A collection of scripts for computing morphometric quantities
