@@ -18,7 +18,7 @@ from seg_to_nephrometry.utils import get_affected_kidney_subregions
 KITS23_PATH = Path(os.environ.get("KITS23_PATH")).resolve(strict=True)
 
 # Create directory for intermediate results
-OUT_PTH = Path(__file__).parent / "intermediate"
+OUT_PTH = Path(__file__).parent / "intermediate_"
 OUT_PTH.mkdir(exist_ok=True)
 
 
