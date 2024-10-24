@@ -33,19 +33,9 @@ def load_data_and_subregions(case_id: str, cache: bool=True):
     img_np = img_nib.get_fdata()
     seg_np = seg_nib.get_fdata().astype(int)
 
-    # Load subregions if available
-    cache_pth = OUT_PTH / f"{case_id}_subregions.nii.gz"
-    if cache and cache_pth.exists():
-        subr_nib = nib.load(str(cache_pth))
-        subr_np = subr_nib.get_fdata()
-    else:
-        # Compute affected subregions
-        subr_np = get_affected_kidney_subregions(seg_np, img_np)
-
-        # Save results
-        subr_nib = nib.Nifti1Image(subr_np, seg_nib.affine)
-        subr_nib.to_filename(str(OUT_PTH / f"{case_id}_subregions.nii.gz"))
-
+    # Don't actually need subregion data anymore
+    subr_nib = None
+    subr_np = None
     return {
         "img_nib": img_nib,
         "img_np": img_np,
@@ -170,14 +160,18 @@ def generate_traces(
         prev_mask[rim_seg > 0] = 1
         prev_mask_undeterred[undeterred_rim > 0] = 1
 
+        # Filter out but don't remove the rim too close to the kidney
+        met_rim_seg = np.copy(rim_seg)
+        met_rim_seg[-200 < blurred_repr_img < -20] = 0
+
         # Compute metrics
         dist_away = i * mm_per_step
-        rim_area = np.sum(rim_seg)
+        rim_area = np.sum(met_rim_seg)
         undeterred_rim_area = np.sum(undeterred_rim)
-        rim_vals = list(repr_img[rim_seg > 0])
+        rim_vals = list(repr_img[met_rim_seg > 0])
         frac_adipose = rim_area/undeterred_rim_area
-        mean_rim_val = np.mean([x for x in rim_vals if -200 < x < -20])
-        std_rim_val = np.std([x for x in rim_vals if -200 < x < -20])
+        mean_rim_val = np.mean(rim_vals)
+        std_rim_val = np.std(rim_vals)
 
         # Add to aggregators
         dists.append(dist_away)
@@ -189,7 +183,7 @@ def generate_traces(
         # Visualize, if requested
         if viz_pth is not None:
             visualize_frame(
-                viz_pth, i, render_repr_img, exp_rim, expu_rim, dists,
+                viz_pth, i, render_repr_img, met_rim_seg, expu_rim, dists,
                 mean_vals, fracs_adipose, rim_vals, rm_extraneous
             )
 
@@ -228,7 +222,7 @@ def main():
         sel_ind = np.equal(subr_dat["subr_np"], 2).sum(axis=(1, 2)).argmax()
         repr_img = subr_dat["img_np"][sel_ind, :, :]
         repr_seg = subr_dat["seg_np"][sel_ind, :, :]
-        repr_subr = subr_dat["subr_np"][sel_ind, :, :]
+        repr_subr = subr_dat["seg_np"][sel_ind, :, :]
 
         # Generate traces
         out_pth = OUT_PTH / case_id / f"frame_{sel_ind:03d}"
@@ -250,7 +244,7 @@ def main():
         for sel_ind in tqdm(frame_queue):
             repr_img = subr_dat["img_np"][sel_ind, :, :]
             repr_seg = subr_dat["seg_np"][sel_ind, :, :]
-            repr_subr = subr_dat["subr_np"][sel_ind, :, :]
+            repr_subr = subr_dat["seg_np"][sel_ind, :, :]
 
             # Generate traces
             # out_pth = OUT_PTH / case_id / f"frame_{sel_ind:03d}"
