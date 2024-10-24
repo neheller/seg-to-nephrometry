@@ -5,8 +5,8 @@
 #SBATCH -n 1
 #SBATCH --mem 64000
 
-#SBATCH --output=dev/241023/logs/01_out.txt
-#SBATCH --error=dev/241023/logs/01_err.txt
+#SBATCH --output=dev/241023_perinephric_fat/logs/01_out.txt
+#SBATCH --error=dev/241023_perinephric_fat/logs/01_err.txt
 
 #SBATCH -p defq
 
