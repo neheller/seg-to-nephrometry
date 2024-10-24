@@ -33,16 +33,28 @@ def load_data_and_subregions(case_id: str, cache: bool=True):
     img_np = img_nib.get_fdata()
     seg_np = seg_nib.get_fdata().astype(int)
 
-    # Don't actually need subregion data anymore
-    subr_nib = None
-    subr_np = None
+    # Get subregion data if not cached
+    cache_pth = OUT_PTH / f"{case_id}_subregions.nii.gz"
+    if not cache or not cache_pth.exists():
+        subr_np = get_affected_kidney_subregions(seg_np, img_np)
+        subr_nib = nib.Nifti1Image(subr_np, img_nib.affine)
+        nib.save(subr_nib, str(cache_pth))
+    else:
+        subr_nib = nib.load(str(cache_pth))
+        subr_np = subr_nib.get_fdata().astype(int)
+
+    # Get binary mask for contralateral kidney
+    contralateral_mask = np.copy(seg_np)
+    contralateral_mask[subr_np > 0] = 0
+
     return {
         "img_nib": img_nib,
         "img_np": img_np,
         "seg_nib": seg_nib,
         "seg_np": seg_np,
         "subr_nib": subr_nib,
-        "subr_np": subr_np
+        "subr_np": subr_np,
+        "contralateral_mask": contralateral_mask
     }
 
 
@@ -102,7 +114,7 @@ def visualize_frame(
 
 
 def generate_traces(
-    repr_img, repr_seg, repr_subr, total_steps, buffer_steps, mm_per_step,
+    repr_img, repr_seg, repr_bin, total_steps, buffer_steps, mm_per_step,
     viz_pth=None, rm_extraneous=True
 ):
     # Initialize visualization
@@ -116,10 +128,10 @@ def generate_traces(
     blurred_repr_img = cv2.GaussianBlur(repr_img, (5, 5), 0)
 
     # Convolve to expand rim
-    prev_mask = repr_subr > 0
+    prev_mask = repr_bin > 0
     prev_mask_undeterred = np.copy(prev_mask)
     rim_seg = np.zeros_like(repr_seg)
-    rim_seg[repr_subr > 0] = 1
+    rim_seg[repr_bin > 0] = 1
     undeterred_rim = np.copy(rim_seg)
     
     # Initialize aggregators
@@ -206,6 +218,7 @@ def main():
         
         # Get case_id
         case_id = f"case_{case_ind:05d}"
+        print("Working on", case_id)
 
         # Load a single case
         subr_dat = load_data_and_subregions(case_id)
@@ -223,42 +236,46 @@ def main():
         sel_ind = np.equal(subr_dat["seg_np"], 2).sum(axis=(1, 2)).argmax()
         repr_img = subr_dat["img_np"][sel_ind, :, :]
         repr_seg = subr_dat["seg_np"][sel_ind, :, :]
-        repr_subr = subr_dat["seg_np"][sel_ind, :, :]
+        repr_subr = subr_dat["subr_np"][sel_ind, :, :]
 
-        # Generate traces
+        # Generate trace for ipsilateral tumor frame
         out_pth = OUT_PTH / case_id / f"frame_{sel_ind:03d}"
         frame_data = generate_traces(
             repr_img, repr_seg, repr_subr, total_steps, buffer_steps,
             mm_per_step, viz_pth=out_pth
         )
 
-        # Select axial slice containing largest tumor
-        # sel_ind = np.equal(subr_dat["subr_np"], 2).sum(axis=(1, 2)).argmax()
-        frame_queue = []
-        for sel_ind in range(subr_dat["img_nib"].shape[0]):
-            if np.equal(subr_dat["seg_np"][sel_ind], 2).sum() < 1:
-                continue
-            frame_queue.append(sel_ind)
+        # For each kidney...
+        for obj in ["subr_np", "contralateral_mask"]:
+            bin_np = (subr_dat[obj] > 0).astype(int)
 
-        print("Working on", case_id)
-        data_by_frame = []
-        for sel_ind in tqdm(frame_queue):
-            repr_img = subr_dat["img_np"][sel_ind, :, :]
-            repr_seg = subr_dat["seg_np"][sel_ind, :, :]
-            repr_subr = subr_dat["seg_np"][sel_ind, :, :]
+            # Select axial slice containing largest tumor
+            # sel_ind = np.equal(subr_dat["subr_np"], 2).sum(axis=(1, 2)).argmax()
+            frame_queue = []
+            for sel_ind in range(subr_dat["img_nib"].shape[0]):
+                if np.equal(bin_np[sel_ind], 1).sum() < 1:
+                    continue
+                frame_queue.append(sel_ind)
 
-            # Generate traces
-            # out_pth = OUT_PTH / case_id / f"frame_{sel_ind:03d}"
-            out_pth = None
-            frame_data = generate_traces(
-                repr_img, repr_seg, repr_subr, total_steps, buffer_steps,
-                mm_per_step, viz_pth=out_pth
-            )
-            data_by_frame.append(frame_data)
+            data_by_frame = []
+            for sel_ind in tqdm(frame_queue):
+                repr_img = subr_dat["img_np"][sel_ind, :, :]
+                repr_seg = subr_dat["seg_np"][sel_ind, :, :]
+                repr_bin = bin_np[sel_ind, :, :]
 
-        # Save results
-        with (OUT_PTH / f"{case_id}_data.json").open("w") as f:
-            json.dump(data_by_frame, f)
+                # Generate traces
+                out_pth = None
+                if sel_ind == frame_queue[len(frame_queue) // 2]:
+                    out_pth = OUT_PTH / case_id / obj / f"frame_{sel_ind:03d}"
+                frame_data = generate_traces(
+                    repr_img, repr_seg, repr_bin, total_steps, buffer_steps,
+                    mm_per_step, viz_pth=out_pth
+                )
+                data_by_frame.append(frame_data)
+
+            # Save results
+            with (OUT_PTH / f"{case_id}_{obj}_data.json").open("w") as f:
+                json.dump(data_by_frame, f)
 
 
 if __name__ == "__main__":
