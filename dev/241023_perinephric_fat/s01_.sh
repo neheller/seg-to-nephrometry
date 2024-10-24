@@ -15,4 +15,4 @@ module load python/gpu/3.10.6
 source /home/hellern/isilon/env/a100-3.10-v2/bin/activate
 module list
 
-python3 /home/hellern/isilon/code/repos/seg-to-nephrometry/241023_perinephric_fat/s01_prelim.py
+python3 /home/hellern/isilon/code/repos/seg-to-nephrometry/dev/241023_perinephric_fat/s01_prelim.py
