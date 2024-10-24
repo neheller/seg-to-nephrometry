@@ -219,7 +219,7 @@ def main():
         total_steps = int(np.ceil(30 / mm_per_step))
 
         # Start with one for visualization -- frame with largest tumor
-        sel_ind = np.equal(subr_dat["subr_np"], 2).sum(axis=(1, 2)).argmax()
+        sel_ind = np.equal(subr_dat["seg_np"], 2).sum(axis=(1, 2)).argmax()
         repr_img = subr_dat["img_np"][sel_ind, :, :]
         repr_seg = subr_dat["seg_np"][sel_ind, :, :]
         repr_subr = subr_dat["seg_np"][sel_ind, :, :]
@@ -235,7 +235,7 @@ def main():
         # sel_ind = np.equal(subr_dat["subr_np"], 2).sum(axis=(1, 2)).argmax()
         frame_queue = []
         for sel_ind in range(subr_dat["img_nib"].shape[0]):
-            if np.equal(subr_dat["subr_np"][sel_ind], 2).sum() < 1:
+            if np.equal(subr_dat["seg_np"][sel_ind], 2).sum() < 1:
                 continue
             frame_queue.append(sel_ind)
 
