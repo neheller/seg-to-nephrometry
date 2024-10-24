@@ -81,12 +81,16 @@ def visualize_frame(
     ax[1].set_ylabel("Mean Intensity")
     ax[1].set_ylim(-200, -20)
     ax[1].set_xlim(0, 30)
+    ax[1].grid()
+    ax[1].set_axisbelow(True)
     ax[2].plot(dists, fracs_adipose)
     # ax[2].set_title("Fraction of Adipose in Rim")
     ax[2].set_xlabel("Distance Away (mm)")
     ax[2].set_ylabel("Fraction of Adipose")
     ax[2].set_ylim(0, 1.0)
     ax[2].set_xlim(0, 30)
+    ax[2].grid()
+    ax[2].set_axisbelow(True)
     plt.savefig(plot_pth)
     plt.close()
 
@@ -131,6 +135,7 @@ def generate_traces(
     # Initialize aggregators
     dists = []
     mean_vals = []
+    std_vals = []
     fracs_adipose = []
     tots_adipose = []
     for i in range(total_steps + 1):
@@ -172,10 +177,12 @@ def generate_traces(
         rim_vals = list(repr_img[rim_seg > 0])
         frac_adipose = rim_area/undeterred_rim_area
         mean_rim_val = np.mean([x for x in rim_vals if -200 < x < -20])
+        std_rim_val = np.std([x for x in rim_vals if -200 < x < -20])
 
         # Add to aggregators
         dists.append(dist_away)
         mean_vals.append(mean_rim_val)
+        std_vals.append(std_rim_val)
         fracs_adipose.append(frac_adipose)
         tots_adipose.append(rim_area)
 
@@ -190,13 +197,21 @@ def generate_traces(
     return {
         "dists": [float(x) for x in dists],
         "mean_vals": [float(x) for x in mean_vals],
+        "std_vals": [float(x) for x in std_vals],
         "fracs_adipose": [float(x) for x in fracs_adipose],
         "tots_adipose": [float(x) for x in tots_adipose]
     }
 
 
 def main():
-    for case_id in ["case_00000", "case_00001", "case_00002"]:
+    for case_ind in range(589):
+        # Skip cases between 300 and 400
+        if 300 <= case_ind < 400:
+            continue
+        
+        # Get case_id
+        case_id = f"case_{case_ind:05d}"
+
         # Load a single case
         subr_dat = load_data_and_subregions(case_id)
 
