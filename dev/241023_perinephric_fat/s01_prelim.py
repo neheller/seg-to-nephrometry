@@ -162,7 +162,8 @@ def generate_traces(
 
         # Filter out but don't remove the rim too close to the kidney
         met_rim_seg = np.copy(rim_seg)
-        met_rim_seg[-200 < blurred_repr_img < -20] = 0
+        met_rim_seg[blurred_repr_img > -20] = 0
+        met_rim_seg[blurred_repr_img < -200] = 0
 
         # Compute metrics
         dist_away = i * mm_per_step
