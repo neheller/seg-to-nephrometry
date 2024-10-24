@@ -3,7 +3,7 @@
 #SBATCH -J manual_review_queue
 #SBATCH -c 12
 #SBATCH -n 1
-#SBATCH --mem 64000
+#SBATCH --mem 32000
 
 #SBATCH --output=dev/241023_perinephric_fat/logs/01_out.txt
 #SBATCH --error=dev/241023_perinephric_fat/logs/01_err.txt
