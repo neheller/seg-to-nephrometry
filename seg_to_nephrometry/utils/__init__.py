@@ -346,6 +346,9 @@ def fill_affected_seg(seg):
 
 
 def get_affected_kidney_subregions(seg, vol):
+    # Ensure segmentation has correct data-type
+    seg = seg.astype(np.uint8)
+
     print("GETTING AFFECTED SUBREGIONS")
     # Get affected region, set seg to zero elsewhere
     print("Isolating side")
