@@ -8,7 +8,7 @@ INT_PTH = Path(__file__).parent / "intermediate_"
 DST_PTH = Path(__file__).parent / "agg_.json"
 
 
-def aggregate_data(data: dict):
+def main():
     agg_data = {}
 
     # Load intermediate date for each case
@@ -33,3 +33,7 @@ def aggregate_data(data: dict):
     # Save data
     with open(DST_PTH, "w") as f:
         json.dump(agg_data, f, indent=2)
+
+
+if __name__ == "__main__":
+    main()
