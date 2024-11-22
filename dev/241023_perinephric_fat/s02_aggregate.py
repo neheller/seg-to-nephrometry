@@ -18,7 +18,7 @@ def main():
             continue
 
         case_id = f"case_{case_num:05d}"
-        ips_pth = INT_PTH / f"{case_id}_data.json"
+        ips_pth = INT_PTH / f"{case_id}_subr_np_data.json"
         cnt_pth = INT_PTH / f"{case_id}_contralateral_mask_data.json"
         try:
             with open(ips_pth, "r") as f:
