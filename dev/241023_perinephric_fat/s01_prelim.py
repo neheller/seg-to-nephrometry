@@ -255,10 +255,12 @@ def run_case(case_id):
             repr_seg = subr_dat["seg_np"][sel_ind, :, :]
             repr_bin = bin_np[sel_ind, :, :]
 
-            # Generate traces
+            # Only save visualization for middle frame
             out_pth = None
             if sel_ind == frame_queue[len(frame_queue) // 2]:
                 out_pth = OUT_PTH / case_id / obj / f"frame_{sel_ind:03d}"
+
+            # Generate traces
             frame_data = generate_traces(
                 repr_img, repr_seg, repr_bin, total_steps, buffer_steps,
                 mm_per_step, viz_pth=out_pth
