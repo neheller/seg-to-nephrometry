@@ -24,7 +24,7 @@ def get_2cm_adipose_frac(data):
             adipose_tot = slice_data["tots_adipose"][cur_slice]
 
             # If no adipose, skip
-            if adipose_tot > 1:
+            if adipose_tot > 1 and not np.isnan(adipose_frac):
                 # Update aggregators
                 numerator += adipose_tot
                 denominator += adipose_tot/adipose_frac
@@ -35,6 +35,7 @@ def get_2cm_adipose_frac(data):
         
     # Compute final fraction
     if denominator == 0:
+        print("No denominator for 2cm_adipose_frac")
         return None
     return numerator/denominator
 
@@ -48,16 +49,20 @@ def get_hu_at_ad_frac_max(data):
     for slice_data in data:
         # Get slice with max adipose to start at
         max_frac_ind = np.argmax(slice_data["fracs_adipose"])
+        tot_adipose = slice_data["tots_adipose"][max_frac_ind]
 
         # Get HU mean at this slice
         hu_mean = slice_data["mean_vals"][max_frac_ind]
 
-        # Update aggregators
-        numerator += hu_mean
-        denominator += 1
+        # Ensure it's not NaN
+        if not np.isnan(hu_mean) and tot_adipose > 1:
+            # Update aggregators
+            numerator += hu_mean
+            denominator += 1
     
     # Compute final fraction
     if denominator == 0:
+        print("No denominator for ad_frac_max")
         return None
     return numerator/denominator
 
@@ -97,7 +102,15 @@ def main():
             "cnt_metrics": cnt_metrics,
         }
 
-    print(json.dumps(metrics, indent=2))
+        # If any of these are NaN, print the raw data for inspection
+        if (
+            any([x is None or np.isnan(x) for x in ips_metrics.values()]) or
+            any([x is None or np.isnan(x) for x in cnt_metrics.values()])
+        ):
+            print("Case", case_id)
+
+    with open(Path(__file__).parent / "metrics.json", "w") as f:
+        json.dump(metrics, f, indent=2)
 
 
 if __name__ == "__main__":
