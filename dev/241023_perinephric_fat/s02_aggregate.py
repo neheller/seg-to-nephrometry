@@ -20,10 +20,16 @@ def main():
         case_id = f"case_{case_num:05d}"
         ips_pth = INT_PTH / f"{case_id}_data.json"
         cnt_pth = INT_PTH / f"{case_id}_contralateral_mask_data.json"
-        with open(ips_pth, "r") as f:
-            ips_data = json.load(f)
-        with open(cnt_pth, "r") as f:
-            cnt_data = json.load(f)
+        try:
+            with open(ips_pth, "r") as f:
+                ips_data = json.load(f)
+        except Exception:
+            ips_data = None
+        try:
+            with open(cnt_pth, "r") as f:
+                cnt_data = json.load(f)
+        except Exception:
+            cnt_data = None
         
         agg_data[case_id] = {
             "ips_data": ips_data,
